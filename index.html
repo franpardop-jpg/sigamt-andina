@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGAMT - Manufacturas Andina S.A. | Triage & Gestión de Activos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        zinc: {
+                            850: '#151518',
+                            950: '#09090b',
+                        },
+                        brand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(160, 160, 175, 0.25); border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(160, 160, 175, 0.4); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast-enter { animation: slideUp 0.25s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col transition-colors duration-200 selection:bg-indigo-500/20 selection:text-indigo-400">
+
+    <!-- TOAST NOTIFICATION CONTAINER (Replaces browser alert/confirm) -->
+    <div id="toast-container" class="fixed bottom-20 md:bottom-6 right-4 z-[60] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- LOGIN & REGISTER MODAL (RF01 / SIG-1) -->
+    <div id="auth-modal" class="fixed inset-0 bg-zinc-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="text-center space-y-1.5">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl mx-auto flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <h2 class="text-xl font-bold tracking-tight mt-2">SIGAMT Autenticación</h2>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">Manufacturas Andina S.A. • Trazabilidad por RUT</p>
+            </div>
+
+            <!-- AUTH TABS -->
+            <div class="flex border-b border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
+                <button type="button" onclick="switchAuthTab('login')" id="tab-btn-login" class="flex-1 py-2.5 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 transition">Iniciar Sesión</button>
+                <button type="button" onclick="switchAuthTab('register')" id="tab-btn-register" class="flex-1 py-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition">Registrar Usuario</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1.5">RUT Usuario</label>
+                    <input type="text" id="login-rut" placeholder="Ej: 12.345.678-9" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500">
+                    <p id="login-error" class="text-[11px] text-rose-500 mt-1.5 hidden font-medium"></p>
+                </div>
+
+                <!-- QUICK DEMO ACCESS PILLS -->
+                <div class="bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800/80 space-y-2">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Acceso Rápido Demo (1 Clic):</span>
+                    <div class="grid grid-cols-1 gap-1.5">
+                        <button type="button" onclick="quickLogin('12.345.678-9')" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-left text-xs transition">
+                            <span class="font-medium">Cleiver Namoc <span class="text-zinc-400 font-mono text-[10px]">(12.345.678-9)</span></span>
+                            <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">OPERARIO</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('15.432.109-8')" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-left text-xs transition">
+                            <span class="font-medium">Francisca Pardo <span class="text-zinc-400 font-mono text-[10px]">(15.432.109-8)</span></span>
+                            <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-indigo-500/10 text-indigo-500">JEFE MANT.</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition">
+                    Ingresar al Sistema
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="space-y-3.5 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Nombre Completo</label>
+                    <input type="text" id="reg-name" placeholder="Ej: Carlos Mendoza" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">RUT (Formato Chileno Módulo 11)</label>
+                    <input type="text" id="reg-rut" placeholder="Ej: 18.765.432-1" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500">
+                    <p id="reg-error" class="text-[11px] text-rose-500 mt-1 hidden font-medium"></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Rol Asignado</label>
+                    <select id="reg-role" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500">
+                        <option value="operario">Operario de Mantenimiento</option>
+                        <option value="jefe">Jefe de Mantenimiento</option>
+                        <option value="gerencia">Gerencia de Planta</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition">
+                    Crear y Registrar Usuario
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- GLOBAL APP SHELL -->
+    <div id="app" class="flex-1 flex flex-col min-h-screen">
+
+        <!-- TOP LOVABLE-STYLE HEADER & BAR -->
+        <header class="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800/80 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+            <div class="px-4 sm:px-6 flex h-14 items-center justify-between gap-3">
+                
+                <!-- BRAND & APP IDENTITY -->
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+                        <i class="fa-solid fa-bug text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-bold text-sm tracking-tight text-zinc-900 dark:text-white">SIGAMT</h1>
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60 hidden sm:inline-block">Triage v2.0</span>
+                        </div>
+                        <p class="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium hidden lg:block">Manufacturas Andina S.A.</p>
+                    </div>
+                </div>
+
+                <!-- DESKTOP TOP NAV TABS -->
+                <nav id="top-nav-desktop" class="hidden md:flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900/80 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800/80">
+                    <!-- Nav items rendered dynamically -->
+                </nav>
+
+                <!-- HEADER CONTROLS (SYNC + USER + THEME) -->
+                <div class="flex items-center gap-2">
+                    
+                    <!-- OFFLINE/SYNC BADGE (RF07 / SIG-7) -->
+                    <button type="button" onclick="toggleOfflineMode()" id="sync-status-btn" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono border transition bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" title="Simular pérdida/recuperación de Wi-Fi en planta">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="sync-text" class="hidden sm:inline text-[11px] font-semibold">ONLINE</span>
+                        <span id="pending-count-badge" class="hidden text-[10px] font-bold bg-amber-500 text-zinc-950 px-1.5 rounded-full">0</span>
+                    </button>
+
+                    <!-- ROLE / USER SWITCHER -->
+                    <div class="relative inline-block text-left" id="user-menu-container">
+                        <button type="button" onclick="toggleUserMenu()" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                            <i class="fa-solid fa-user-gear text-indigo-500"></i>
+                            <span id="active-user-name" class="font-bold text-zinc-800 dark:text-zinc-200 max-w-[90px] sm:max-w-none truncate">Operario</span>
+                            <span id="active-user-rut" class="font-mono text-zinc-400 text-[11px] hidden lg:inline">12.345.678-9</span>
+                            <span id="active-user-role-badge" class="px-1.5 py-0.5 text-[10px] uppercase font-bold rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">OPERARIO</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-zinc-400"></i>
+                        </button>
+
+                        <div id="user-menu-dropdown" class="hidden absolute right-0 mt-2 w-72 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl z-50 p-2.5 space-y-2">
+                            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex justify-between items-center">
+                                <span>Cambiar Perfil Activo</span>
+                                <button type="button" onclick="openAuthModal('register')" class="text-indigo-500 hover:underline text-[10px] font-bold">+ registrar</button>
+                            </div>
+                            <div id="registered-users-list" class="space-y-1 max-h-48 overflow-y-auto custom-scrollbar"></div>
+                            <div class="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                <button type="button" onclick="openAuthModal('login')" class="w-full text-left px-2.5 py-2 rounded-lg text-xs text-rose-500 hover:bg-rose-500/10 font-semibold flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-right-from-bracket"></i>
+                                    <span>Pantalla de Acceso / Registro</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- THEME TOGGLE (DARK / LIGHT) -->
+                    <button type="button" onclick="toggleDarkMode()" class="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition" title="Cambiar modo Oscuro / Claro">
+                        <i id="theme-icon" class="fa-solid fa-sun text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN VIEW WORKSPACE -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 md:pb-10">
+
+            <!-- SECTION 1: TRIAGE BUG REPORT & FAILURES HUB (RF06 / SIG-6) -->
+            <section id="section-failures" class="app-section space-y-5">
+                
+                <!-- HEADER TITLE & NEW REPORT CTA -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                            <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Triage de Fallas Correctivas</h2>
+                        </div>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Captura en terreno, priorización por severidad y conversión directa a Órdenes de Trabajo (OT)</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openReportFailureModal()" class="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/20 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Reportar Falla en Terreno</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TRIAGE STATS CARDS BAR -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-white dark:bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 shadow-sm">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] font-medium">
+                            <span>Total Fallas</span>
+                            <i class="fa-solid fa-list-check text-xs"></i>
+                        </div>
+                        <div id="stat-total" class="text-2xl font-bold font-mono text-zinc-900 dark:text-white mt-1">0</div>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900/60 p-3.5 rounded-xl border border-rose-500/30 dark:border-rose-900/40 shadow-sm">
+                        <div class="flex items-center justify-between text-rose-600 dark:text-rose-400 text-[11px] font-medium">
+                            <span>Críticas</span>
+                            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        </div>
+                        <div id="stat-critical" class="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900/60 p-3.5 rounded-xl border border-amber-500/30 dark:border-amber-900/40 shadow-sm">
+                        <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 text-[11px] font-medium">
+                            <span>Pendientes</span>
+                            <i class="fa-solid fa-clock text-xs"></i>
+                        </div>
+                        <div id="stat-pending" class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900/60 p-3.5 rounded-xl border border-indigo-500/30 dark:border-indigo-900/40 shadow-sm">
+                        <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400 text-[11px] font-medium">
+                            <span>Convertidas a OT</span>
+                            <i class="fa-solid fa-wrench text-xs"></i>
+                        </div>
+                        <div id="stat-ot" class="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-1">0</div>
+                    </div>
+                </div>
+
+                <!-- TRIAGE SEARCH & FILTER BAR -->
+                <div class="bg-white dark:bg-zinc-900/80 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-zinc-400 text-xs"></i>
+                        <input type="text" id="triage-search" oninput="renderFailuresTriage()" placeholder="Buscar por código, descripción, activo o RUT..."
+                            class="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500 text-zinc-900 dark:text-white">
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <select id="triage-severity" onchange="renderFailuresTriage()" class="flex-1 sm:flex-none bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none">
+                            <option value="">Severidad: Todas</option>
+                            <option value="Crítica">Crítica (Línea Parada)</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Media">Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+
+                        <select id="triage-status" onchange="renderFailuresTriage()" class="flex-1 sm:flex-none bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none">
+                            <option value="">Estado: Todos</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Convertido a OT">Convertido a OT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- DESKTOP INTERACTIVE TRIAGE DATA TABLE (>= md) -->
+                <div class="hidden md:block bg-white dark:bg-zinc-900/80 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-zinc-100/70 dark:bg-zinc-950/70 text-zinc-500 dark:text-zinc-400 font-mono uppercase text-[10px] border-b border-zinc-200 dark:border-zinc-800">
+                            <tr>
+                                <th class="p-3.5">ID / Fecha</th>
+                                <th class="p-3.5">Severidad</th>
+                                <th class="p-3.5">Activo Afectado</th>
+                                <th class="p-3.5">Descripción de Falla</th>
+                                <th class="p-3.5">Reportado por (RUT)</th>
+                                <th class="p-3.5">Estado Triage</th>
+                                <th class="p-3.5 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="triage-desktop-table" class="divide-y divide-zinc-200 dark:divide-zinc-800/60 font-sans">
+                            <!-- Rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- MOBILE TOUCH TRIAGE CARDS (< md) -->
+                <div id="triage-mobile-cards" class="md:hidden space-y-3">
+                    <!-- Rendered dynamically -->
+                </div>
+
+            </section>
+
+            <!-- SECTION 2: CATASTRO DE ACTIVOS & EXPEDIENTE DIGITAL (RF02 - RF05) -->
+            <section id="section-assets" class="app-section hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Catastro de Activos</h2>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Ficha técnica, expediente digital y código QR único por máquina</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="openNewAssetModal()" class="role-jefe-only bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Nuevo Activo
+                        </button>
+                        <button type="button" onclick="openQrScannerModal()" class="bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-qrcode"></i> Escanear QR en Terreno
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-zinc-400 text-xs"></i>
+                        <input type="text" id="asset-search" oninput="renderAssets()" placeholder="Buscar activo por código, nombre o marca..."
+                            class="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs outline-none text-zinc-900 dark:text-white">
+                    </div>
+                    <select id="asset-filter-line" onchange="renderAssets()" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 outline-none">
+                        <option value="">Todas las Líneas</option>
+                        <option value="Línea 1 - Estampado">Línea 1 - Estampado</option>
+                        <option value="Línea 2 - Envasado">Línea 2 - Envasado</option>
+                        <option value="Servicios Generales">Servicios Generales</option>
+                    </select>
+                </div>
+
+                <div id="asset-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic Assets -->
+                </div>
+            </section>
+
+            <!-- SECTION 3: ÓRDENES DE TRABAJO (OT BOARD - RF08, RF09, RF12) -->
+            <section id="section-ot" class="app-section hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Órdenes de Trabajo (OT)</h2>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Gestión de estados, consumo de repuestos y cierre trazable con RUT técnico</p>
+                    </div>
+                    <button type="button" onclick="openNewOtModal()" class="role-jefe-only bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Crear OT Manual
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <!-- PENDIENTES -->
+                    <div class="bg-zinc-100/60 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <div class="flex items-center justify-between font-mono text-xs font-bold text-zinc-600 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                            <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-500"></span> PENDIENTES</span>
+                            <span id="count-ot-pendiente" class="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">0</span>
+                        </div>
+                        <div id="ot-list-pendiente" class="space-y-3 min-h-[160px]"></div>
+                    </div>
+
+                    <!-- EN CURSO -->
+                    <div class="bg-zinc-100/60 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <div class="flex items-center justify-between font-mono text-xs font-bold text-zinc-600 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                            <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> EN CURSO</span>
+                            <span id="count-ot-encurso" class="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">0</span>
+                        </div>
+                        <div id="ot-list-encurso" class="space-y-3 min-h-[160px]"></div>
+                    </div>
+
+                    <!-- CERRADAS -->
+                    <div class="bg-zinc-100/60 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <div class="flex items-center justify-between font-mono text-xs font-bold text-zinc-600 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                            <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> CERRADAS</span>
+                            <span id="count-ot-cerrada" class="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">0</span>
+                        </div>
+                        <div id="ot-list-cerrada" class="space-y-3 min-h-[160px]"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: PREVENTIVOS Y COSTOS (RF11, RF13) -->
+            <section id="section-preventive" class="app-section hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Pautas Preventivas & Costos</h2>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Planificación preventiva por frecuencia y control de gastos por activo</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openNewPreventiveModal()" class="role-jefe-only bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                            <i class="fa-solid fa-plus"></i> Nueva Pauta
+                        </button>
+                        <button type="button" onclick="exportCostsCSV()" class="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-zinc-500">Pautas de Mantención Programadas</h3>
+                        <div id="preventive-list" class="space-y-3 divide-y divide-zinc-100 dark:divide-zinc-800/80"></div>
+                    </div>
+
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-zinc-500">Acumulado Gastos por Activo (CLP)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-zinc-50 dark:bg-zinc-950 font-mono text-[10px] uppercase text-zinc-400">
+                                    <tr>
+                                        <th class="p-2.5">Activo</th>
+                                        <th class="p-2.5">Línea</th>
+                                        <th class="p-2.5 text-right">Total Acumulado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cost-table-body" class="divide-y divide-zinc-100 dark:divide-zinc-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: ANALYTICS & IA RECOMMENDATIONS (RF14, RF15) -->
+            <section id="section-analytics" class="app-section hidden space-y-5">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Panel Gerencial & Sugerencias IA</h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Indicadores clave de negocio (RN1–RN3) y detección asistida de patrones de falla</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <span class="text-[10px] font-mono font-bold uppercase text-zinc-400">Reducción Detenciones</span>
+                        <div class="text-2xl font-bold text-emerald-500 font-mono mt-1">-28.5%</div>
+                        <span class="text-[10px] text-zinc-500">Meta RN1 (20%) Superada</span>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <span class="text-[10px] font-mono font-bold uppercase text-zinc-400">Trazabilidad por RUT</span>
+                        <div class="text-2xl font-bold text-indigo-500 font-mono mt-1">96.4%</div>
+                        <span class="text-[10px] text-zinc-500">Meta 90% alcanzada</span>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <span class="text-[10px] font-mono font-bold uppercase text-zinc-400">Gasto Mantención Total</span>
+                        <div id="kpi-total-cost" class="text-2xl font-bold text-zinc-900 dark:text-white font-mono mt-1">$4.120.000</div>
+                        <span class="text-[10px] text-zinc-500">-16.2% vs año anterior</span>
+                    </div>
+                    <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                        <span class="text-[10px] font-mono font-bold uppercase text-zinc-400">Disponibilidad de Líneas</span>
+                        <div class="text-2xl font-bold text-amber-500 font-mono mt-1">94.8%</div>
+                        <span class="text-[10px] text-zinc-500">Operación continua</span>
+                    </div>
+                </div>
+
+                <!-- AI RECOMMENDATIONS (Human-in-the-loop RNF06) -->
+                <div class="bg-zinc-900 text-white p-5 rounded-2xl border border-zinc-800 shadow-xl space-y-4">
+                    <div class="flex items-center gap-3 border-b border-zinc-800 pb-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-sm">Sugerencias IA de Patrones de Falla (RF15)</h3>
+                                <span class="px-2 py-0.5 text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">Solo Recomendación</span>
+                            </div>
+                            <p class="text-xs text-zinc-400">Requiere validación y decisión humana del Maestro Especialista o Jefe de Mantenimiento</p>
+                        </div>
+                    </div>
+
+                    <div id="ai-suggestions-container" class="space-y-3"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- MOBILE BOTTOM NAVIGATION -->
+        <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 px-2 py-2 flex justify-around items-center z-40">
+            <!-- Rendered dynamically based on role -->
+        </nav>
+
+    </div>
+
+    <!-- MODAL 1: REPORT FALLA CORRECTIVA (TRIAGE FORM) -->
+    <div id="modal-report-failure" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                    <h3 class="font-bold text-base tracking-tight">Reportar Falla Correctiva</h3>
+                </div>
+                <button type="button" onclick="closeModal('modal-report-failure')" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="submitFailureReport(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Activo Afectado</label>
+                    <select id="report-asset-id" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500 text-zinc-900 dark:text-white"></select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Nivel de Severidad</label>
+                    <select id="report-severity" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500 text-zinc-900 dark:text-white">
+                        <option value="Crítica">Crítica (Detiene Línea de Producción)</option>
+                        <option value="Alta">Alta (Riesgo de Detención en Breve)</option>
+                        <option value="Media" selected>Media (Falla Parcial / Rendimiento Bajo)</option>
+                        <option value="Baja">Baja (Detalle Menor / Ruido Extraño)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Descripción de la Incidencia</label>
+                    <textarea id="report-desc" required rows="3" placeholder="Describe los síntomas técnicos, sonidos, temperatura o fugas observadas..."
+                        class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500 text-zinc-900 dark:text-white"></textarea>
+                </div>
+
+                <div class="bg-zinc-100 dark:bg-zinc-950 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div><span class="text-zinc-400 block text-[10px]">INFORMANTE (RUT):</span> <span id="report-rut-preview" class="font-bold text-indigo-500">-</span></div>
+                    <div><span class="text-zinc-400 block text-[10px]">FECHA / HORA:</span> <span id="report-time-preview" class="font-bold text-zinc-700 dark:text-zinc-300">-</span></div>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
+                    Guardar Falla en Triage
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CONVERT TRIAGE FAILURE TO OT -->
+    <div id="modal-convert-ot" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <h3 class="font-bold text-base tracking-tight">Convertir Falla a Orden de Trabajo</h3>
+                <button type="button" onclick="closeModal('modal-convert-ot')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="submitConvertOt(event)" class="space-y-3.5">
+                <input type="hidden" id="convert-failure-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-500 uppercase mb-1">Título de la OT</label>
+                    <input type="text" id="convert-ot-title" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-500 uppercase mb-1">Técnico Asignado (RUT)</label>
+                    <select id="convert-ot-rut" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs font-mono text-zinc-900 dark:text-white"></select>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Crear y Asignar Orden de Trabajo
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ASSET EXPEDIENTE DIGITAL & QR PRINT -->
+    <div id="modal-asset-detail" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 space-y-6 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800">
+            <div class="flex justify-between items-start border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                <div>
+                    <span id="modal-asset-code" class="text-xs font-mono bg-indigo-500/10 text-indigo-500 px-2 py-1 rounded font-bold">ACT-001</span>
+                    <h3 id="modal-asset-title" class="text-xl font-bold mt-1.5">Prensa Hidráulica 50T</h3>
+                </div>
+                <button type="button" onclick="closeModal('modal-asset-detail')" class="text-zinc-400 hover:text-zinc-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2.5 text-xs bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div><span class="text-zinc-400 block text-[10px] uppercase font-mono">Línea de Producción</span> <span id="modal-asset-line" class="font-semibold text-sm">Línea 1</span></div>
+                    <div><span class="text-zinc-400 block text-[10px] uppercase font-mono">Ubicación Física</span> <span id="modal-asset-location" class="font-semibold">Nave A-1</span></div>
+                    <div><span class="text-zinc-400 block text-[10px] uppercase font-mono">Marca / Modelo</span> <span id="modal-asset-brand" class="font-semibold">Bosch Rexroth</span></div>
+                    <div><span class="text-zinc-400 block text-[10px] uppercase font-mono">Especificaciones</span> <span id="modal-asset-specs" class="font-medium text-zinc-600 dark:text-zinc-300">Presión máx 250 bar • 380V Trifásico</span></div>
+                </div>
+
+                <div class="bg-zinc-50 dark:bg-zinc-950 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center space-y-2">
+                    <div id="qr-code-svg" class="bg-white p-2.5 rounded-xl shadow-sm border border-zinc-200"></div>
+                    <p class="text-[10px] text-zinc-400 font-mono">Etiqueta QR Única de Terreno</p>
+                    <button type="button" onclick="window.print()" class="text-xs bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-700 text-white px-3.5 py-1.5 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-print mr-1"></i> Imprimir Etiqueta QR
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="font-bold text-xs uppercase tracking-wider text-zinc-400 mb-2">Historial Cronológico de Intervenciones con RUT</h4>
+                <div class="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden text-xs">
+                    <table class="w-full text-left">
+                        <thead class="bg-zinc-50 dark:bg-zinc-950 text-zinc-400 font-mono text-[10px] border-b border-zinc-200 dark:border-zinc-800">
+                            <tr>
+                                <th class="p-2.5">Fecha/Hora</th>
+                                <th class="p-2.5">Técnico (RUT)</th>
+                                <th class="p-2.5">Acciones Ejecutadas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-asset-history" class="divide-y divide-zinc-100 dark:divide-zinc-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: QR SCANNER SIMULATOR -->
+    <div id="modal-qr-scanner" class="fixed inset-0 bg-zinc-950/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 text-white text-center space-y-4">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <h3 class="font-bold text-xs font-mono uppercase">Escanear QR Terreno</h3>
+                <button type="button" onclick="closeModal('modal-qr-scanner')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="relative w-40 h-40 mx-auto border-2 border-indigo-500 rounded-2xl flex items-center justify-center overflow-hidden bg-zinc-950">
+                <div class="w-full h-0.5 bg-indigo-400 absolute top-1/2 animate-bounce"></div>
+                <i class="fa-solid fa-qrcode text-5xl text-zinc-800"></i>
+            </div>
+            <p class="text-[11px] text-zinc-400">Selecciona una máquina para simular la lectura de su etiqueta QR:</p>
+            <select id="scanner-asset-select" class="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl p-2.5 text-xs outline-none"></select>
+            <button type="button" onclick="executeQrScan()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow transition">
+                Abrir Ficha Técnica (&lt;2s)
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 5: CIERRE DE OT & REPUESTOS -->
+    <div id="modal-close-ot" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-md w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <h3 class="font-bold text-base">Cierre & Registro de Intervención</h3>
+                <button type="button" onclick="closeModal('modal-close-ot')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form onsubmit="submitCloseOt(event)" class="space-y-3.5">
+                <input type="hidden" id="close-ot-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Acciones Técnicas Realizadas</label>
+                    <textarea id="close-ot-actions" required rows="3" placeholder="Detalla la reparación, calibración o intervención realizada..." class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Repuesto Consumido (RF12 - Opcional)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="close-spare-name" placeholder="Nombre repuesto" class="col-span-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs text-zinc-900 dark:text-white">
+                        <input type="number" id="close-spare-cost" min="0" placeholder="Costo CLP" class="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs text-zinc-900 dark:text-white">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Cerrar Intervención con Mi RUT
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: CREAR OT MANUAL (RF08) -->
+    <div id="modal-new-ot" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-md w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <h3 class="font-bold text-base">Nueva Orden de Trabajo (OT)</h3>
+                <button type="button" onclick="closeModal('modal-new-ot')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="submitNewOt(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Activo</label>
+                    <select id="new-ot-asset" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Título de la OT</label>
+                    <input type="text" id="new-ot-title" required placeholder="Ej: Cambio de rodamientos eje principal" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Descripción / Instrucciones</label>
+                    <textarea id="new-ot-desc" required rows="2" placeholder="Detalle técnico del trabajo a ejecutar..." class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-zinc-900 dark:text-white"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Prioridad</label>
+                        <select id="new-ot-priority" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs text-zinc-900 dark:text-white">
+                            <option value="Alta">Alta</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Técnico Asignado</label>
+                        <select id="new-ot-rut" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs font-mono text-zinc-900 dark:text-white"></select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Generar Orden de Trabajo
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 7: CREAR NUEVO ACTIVO (RF02) -->
+    <div id="modal-new-asset" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-md w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <h3 class="font-bold text-base">Registrar Nuevo Activo</h3>
+                <button type="button" onclick="closeModal('modal-new-asset')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="submitNewAsset(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Código Único</label>
+                        <input type="text" id="new-asset-id" placeholder="ACT-005" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs font-mono uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Línea</label>
+                        <select id="new-asset-line" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                            <option value="Línea 1 - Estampado">Línea 1 - Estampado</option>
+                            <option value="Línea 2 - Envasado">Línea 2 - Envasado</option>
+                            <option value="Servicios Generales">Servicios Generales</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Nombre de la Máquina</label>
+                    <input type="text" id="new-asset-name" placeholder="Ej: Embotelladora Rotativa R12" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Ubicación</label>
+                        <input type="text" id="new-asset-location" placeholder="Nave B-2" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Marca / Modelo</label>
+                        <input type="text" id="new-asset-brand" placeholder="Krones Pro" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Guardar en Catastro y Generar QR
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 8: NUEVA PAUTA PREVENTIVA (RF11) -->
+    <div id="modal-new-preventive" class="fixed inset-0 bg-zinc-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-md w-full p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <div class="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <h3 class="font-bold text-base">Definir Pauta Preventiva</h3>
+                <button type="button" onclick="closeModal('modal-new-preventive')" class="text-zinc-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="submitNewPreventive(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Activo</label>
+                    <select id="new-prev-asset" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Tarea Preventiva</label>
+                    <input type="text" id="new-prev-title" placeholder="Ej: Calibración de sensores ópticos" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Frecuencia</label>
+                        <select id="new-prev-freq" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                            <option value="Quincenal">Quincenal</option>
+                            <option value="Mensual" selected>Mensual</option>
+                            <option value="Trimestral">Trimestral</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-zinc-500 mb-1">Próxima Fecha</label>
+                        <input type="date" id="new-prev-date" required class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2 text-xs">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Programar Pauta
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        // IN-MEMORY STATE (Safe for sandboxed Preview environments)
+        let users = [
+            { rut: '12.345.678-9', name: 'Cleiver Namoc', role: 'operario' },
+            { rut: '15.432.109-8', name: 'Francisca Pardo', role: 'jefe' }
+        ];
+
+        let assets = [
+            { id: 'ACT-001', name: 'Prensa Hidráulica 50T', line: 'Línea 1 - Estampado', location: 'Nave A-1', brand: 'Bosch Rexroth', specs: 'Presión máx 250 bar • 380V', status: 'Operativo', cost: 1250000 },
+            { id: 'ACT-002', name: 'Torno CNC UltraCut', line: 'Línea 1 - Estampado', location: 'Nave A-2', brand: 'Haas Automation', specs: 'Husillo 12.000 RPM • 15kW', status: 'En Mantención', cost: 890000 },
+            { id: 'ACT-003', name: 'Cinta Transportadora V3', line: 'Línea 2 - Envasado', location: 'Nave B-1', brand: 'Siemens Drive', specs: 'Motor 5.5kW • Banda PVC 800mm', status: 'Operativo', cost: 420000 },
+            { id: 'ACT-004', name: 'Compresor Industrial 100HP', line: 'Servicios Generales', location: 'Salón Máquinas', brand: 'Kaeser Compressors', specs: 'Caudal 14 m³/min • 8 bar', status: 'Operativo', cost: 1560000 }
+        ];
+
+        let failureReports = [
+            { id: 'FALLA-12', assetId: 'ACT-002', severity: 'Crítica', desc: 'Fuga de aceite hidráulico en pistón principal y sobrecalentamiento de motor.', reporterRut: '12.345.678-9', date: '13-11-2026 08:30', status: 'Pendiente' },
+            { id: 'FALLA-15', assetId: 'ACT-003', severity: 'Media', desc: 'Desalineación leve de rodillo tensor produciendo desgaste irregular en borde.', reporterRut: '12.345.678-9', date: '13-11-2026 10:15', status: 'Convertido a OT' },
+            { id: 'FALLA-18', assetId: 'ACT-001', severity: 'Alta', desc: 'Vibración anómala en válvula proporcional durante ciclo de retorno.', reporterRut: '12.345.678-9', date: '13-11-2026 11:05', status: 'Pendiente' }
+        ];
+
+        let workOrders = [
+            { id: 'OT-101', assetId: 'ACT-002', title: 'Cambio de Retén Pistón Hidráulico', desc: 'Fuga de aceite en pistón principal.', priority: 'Alta', status: 'Pendiente', assignedRut: '12.345.678-9', date: '13-11-2026 09:00' },
+            { id: 'OT-102', assetId: 'ACT-003', title: 'Alineación y Tensado de Cinta V3', desc: 'Desalineación rodillo tensor.', priority: 'Media', status: 'En curso', assignedRut: '12.345.678-9', date: '13-11-2026 10:30' },
+            { id: 'OT-100', assetId: 'ACT-001', title: 'Mantención Preventiva Mensual', desc: 'Lubricación general y cambio de filtros.', priority: 'Baja', status: 'Cerrada', assignedRut: '12.345.678-9', date: '10-11-2026 14:00' }
+        ];
+
+        let interventions = [
+            { id: 'INT-001', assetId: 'ACT-001', otId: 'OT-100', rut: '12.345.678-9', date: '10-11-2026 15:30', details: 'Se realizó sustitución de sellos, purga de circuito y lubricación general.' }
+        ];
+
+        let preventiveSchedules = [
+            { id: 'PREV-01', assetId: 'ACT-001', title: 'Revisión Sistema Hidráulico', freq: 'Mensual', nextDate: '18-11-2026' },
+            { id: 'PREV-02', assetId: 'ACT-004', title: 'Cambio de Filtro Purificador de Aire', freq: 'Trimestral', nextDate: '30-11-2026' }
+        ];
+
+        let aiSuggestions = [
+            { id: 'AI-01', assetId: 'ACT-002', title: 'Patrón Recurrente de Temperatura en Torno CNC', reason: 'Se detectaron 3 fallas térmicas en los últimos 45 días tras turnos extendidos.', recommendation: 'Sustituir electroválvula de refrigeración y programar limpieza de intercambiador.', decision: null },
+            { id: 'AI-02', assetId: 'ACT-001', title: 'Desgaste Prematuro de Sellos Hidráulicos', reason: 'Incremento del 18% en consumo de retenes respecto al trimestre anterior.', recommendation: 'Verificar alineación de vástago y presión de alivio en próxima parada.', decision: null }
+        ];
+
+        let currentUser = users[1]; // Default Jefe for full visibility once logged in
+        let isOnline = true;
+        let isDarkMode = true;
+        let activeSection = 'failures';
+        let pendingSyncQueue = [];
+
+        // TOAST UI NOTIFICATION
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const colors = {
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                error: 'bg-rose-600 text-white border-rose-500',
+                warning: 'bg-amber-500 text-zinc-950 border-amber-400',
+                info: 'bg-zinc-900 text-white border-zinc-700'
+            };
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                warning: 'fa-wifi',
+                info: 'fa-circle-info'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast-enter pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.25s ease';
+                setTimeout(() => toast.remove(), 260);
+            }, 3200);
+        }
+
+        // RUT VALIDATION ALGORITHM (MODULO 11 CHILE)
+        function validateRutChile(rutCompleto) {
+            let clean = rutCompleto.replace(/\./g, '').trim();
+            if (!/^[0-9]+-[0-9kK]{1}$/.test(clean)) return false;
+            let tmp = clean.split('-');
+            let digv = tmp[1].toLowerCase();
+            let rut = parseInt(tmp[0], 10);
+
+            let m = 0, s = 1;
+            for (; rut; rut = Math.floor(rut / 10)) {
+                s = (s + rut % 10 * (9 - m++ % 6)) % 11;
+            }
+            let dvCalculado = s ? (s - 1).toString() : 'k';
+            return dvCalculado === digv;
+        }
+
+        window.onload = function() {
+            updateActiveUserDisplay();
+            renderNavigation();
+            renderFailuresTriage();
+            renderAssets();
+            renderWorkOrders();
+            renderPreventiveAndCosts();
+            renderAiSuggestions();
+        };
+
+        // DARK / LIGHT MODE TOGGLE
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (isDarkMode) {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-xs';
+            } else {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon text-xs';
+            }
+        }
+
+        // USER MENU DROPDOWN
+        function toggleUserMenu() {
+            document.getElementById('user-menu-dropdown').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('user-menu-container');
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (container && dropdown && !container.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // AUTH & REGISTRATION LOGIC
+        function switchAuthTab(tab) {
+            const formLogin = document.getElementById('form-login');
+            const formReg = document.getElementById('form-register');
+            const btnLogin = document.getElementById('tab-btn-login');
+            const btnReg = document.getElementById('tab-btn-register');
+
+            if (tab === 'login') {
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+                btnLogin.className = "flex-1 py-2.5 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold";
+                btnReg.className = "flex-1 py-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-semibold";
+            } else {
+                formLogin.classList.add('hidden');
+                formReg.classList.remove('hidden');
+                btnReg.className = "flex-1 py-2.5 border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 font-semibold";
+                btnLogin.className = "flex-1 py-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-semibold";
+            }
+        }
+
+        function openAuthModal(tab = 'login') {
+            document.getElementById('user-menu-dropdown').classList.add('hidden');
+            switchAuthTab(tab);
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function quickLogin(rut) {
+            document.getElementById('login-rut').value = rut;
+            const foundUser = users.find(u => u.rut === rut);
+            if (foundUser) {
+                currentUser = foundUser;
+                updateActiveUserDisplay();
+                renderNavigation();
+                renderFailuresTriage();
+                renderWorkOrders();
+                closeModal('auth-modal');
+                showToast(`Bienvenido, ${currentUser.name} (${currentUser.role.toUpperCase()})`, 'success');
+            }
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const rutInput = document.getElementById('login-rut').value.trim();
+            const err = document.getElementById('login-error');
+
+            if (!validateRutChile(rutInput)) {
+                err.textContent = "El RUT ingresado no es válido según formato Chileno (Módulo 11).";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            let foundUser = users.find(u => u.rut.replace(/\./g, '') === rutInput.replace(/\./g, ''));
+            if (!foundUser) {
+                foundUser = { rut: rutInput, name: 'Técnico ' + rutInput.slice(0, 5), role: 'operario' };
+                users.push(foundUser);
+            }
+
+            currentUser = foundUser;
+            err.classList.add('hidden');
+            updateActiveUserDisplay();
+            renderNavigation();
+            renderFailuresTriage();
+            renderWorkOrders();
+            closeModal('auth-modal');
+            showToast(`Sesión iniciada: ${currentUser.name}`, 'success');
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const rut = document.getElementById('reg-rut').value.trim();
+            const role = document.getElementById('reg-role').value;
+            const err = document.getElementById('reg-error');
+
+            if (!validateRutChile(rut)) {
+                err.textContent = "El RUT ingresado no es válido (verifica dígito verificador).";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            if (users.some(u => u.rut.replace(/\./g, '') === rut.replace(/\./g, ''))) {
+                err.textContent = "Este RUT ya se encuentra registrado en el sistema.";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            const newUser = { rut, name, role };
+            users.push(newUser);
+            currentUser = newUser;
+            err.classList.add('hidden');
+            updateActiveUserDisplay();
+            renderNavigation();
+            renderFailuresTriage();
+            renderWorkOrders();
+            closeModal('auth-modal');
+            showToast(`Usuario ${name} registrado correctamente`, 'success');
+        }
+
+        function updateActiveUserDisplay() {
+            document.getElementById('active-user-name').textContent = currentUser.name;
+            document.getElementById('active-user-rut').textContent = currentUser.rut;
+            document.getElementById('active-user-role-badge').textContent = currentUser.role.toUpperCase();
+
+            const list = document.getElementById('registered-users-list');
+            list.innerHTML = users.map(u => `
+                <button type="button" onclick="switchUserDirect('${u.rut}')" class="w-full text-left p-2 rounded-lg text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between transition ${u.rut === currentUser.rut ? 'bg-indigo-500/10 border border-indigo-500/20' : ''}">
+                    <div>
+                        <div class="font-semibold text-zinc-800 dark:text-zinc-200">${u.name}</div>
+                        <div class="text-[10px] text-zinc-400 font-mono">${u.rut}</div>
+                    </div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${u.role === 'jefe' ? 'bg-indigo-500/20 text-indigo-400' : u.role === 'gerencia' ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500'}">${u.role.slice(0, 4)}</span>
+                </button>
+            `).join('');
+        }
+
+        function switchUserDirect(rut) {
+            const u = users.find(usr => usr.rut === rut);
+            if (u) {
+                currentUser = u;
+                updateActiveUserDisplay();
+                renderNavigation();
+                renderFailuresTriage();
+                renderWorkOrders();
+                document.getElementById('user-menu-dropdown').classList.add('hidden');
+                showToast(`Rol cambiado a ${u.name} (${u.role.toUpperCase()})`, 'info');
+            }
+        }
+
+        // NAVIGATION LOGIC (Desktop & Mobile)
+        function renderNavigation() {
+            const navDesktop = document.getElementById('top-nav-desktop');
+            const navMobile = document.getElementById('mobile-bottom-nav');
+
+            let items = [
+                { id: 'failures', icon: 'fa-bug', label: 'Triage Fallas', short: 'Triage' },
+                { id: 'assets', icon: 'fa-boxes-stacked', label: 'Activos', short: 'Activos' },
+                { id: 'ot', icon: 'fa-wrench', label: 'Órdenes Trabajo', short: 'OTs' }
+            ];
+
+            if (currentUser.role === 'jefe' || currentUser.role === 'gerencia') {
+                items.push({ id: 'preventive', icon: 'fa-calendar-check', label: 'Preventivos', short: 'Preventivos' });
+            }
+            if (currentUser.role === 'gerencia' || currentUser.role === 'jefe') {
+                items.push({ id: 'analytics', icon: 'fa-chart-line', label: 'Panel & IA', short: 'Panel' });
+            }
+
+            if (!items.some(i => i.id === activeSection)) {
+                activeSection = 'failures';
+                document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+                document.getElementById('section-failures').classList.remove('hidden');
+            }
+
+            navDesktop.innerHTML = items.map(i => `
+                <button type="button" onclick="switchSection('${i.id}')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${activeSection === i.id ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'}">
+                    <i class="fa-solid ${i.icon} text-[11px]"></i>
+                    <span>${i.label}</span>
+                </button>
+            `).join('');
+
+            navMobile.innerHTML = items.map(i => `
+                <button type="button" onclick="switchSection('${i.id}')" class="flex flex-col items-center gap-1 text-[10px] font-medium px-2 py-1 transition ${activeSection === i.id ? 'text-indigo-500 font-bold' : 'text-zinc-400'}">
+                    <i class="fa-solid ${i.icon} text-base"></i>
+                    <span>${i.short}</span>
+                </button>
+            `).join('');
+
+            document.querySelectorAll('.role-jefe-only').forEach(el => {
+                if (currentUser.role === 'jefe') el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+        }
+
+        function switchSection(secId) {
+            activeSection = secId;
+            document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${secId}`).classList.remove('hidden');
+            renderNavigation();
+        }
+
+        // LOVABLE SEVERITY BADGES COMPONENT
+        function getSeverityBadge(severity) {
+            switch (severity) {
+                case 'Crítica':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>CRÍTICA</span>`;
+                case 'Alta':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>ALTA</span>`;
+                case 'Media':
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>MEDIA</span>`;
+                default:
+                    return `<span class="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20"><i class="fa-solid fa-circle text-[6px] mr-1.5"></i>BAJA</span>`;
+            }
+        }
+
+        // RENDER TRIAGE BUG HUB
+        function renderFailuresTriage() {
+            const search = document.getElementById('triage-search').value.toLowerCase();
+            const sevFilter = document.getElementById('triage-severity').value;
+            const statusFilter = document.getElementById('triage-status').value;
+
+            const filtered = failureReports.filter(f => {
+                const asset = assets.find(a => a.id === f.assetId);
+                const assetName = asset ? asset.name.toLowerCase() : '';
+                const matchSearch = f.desc.toLowerCase().includes(search) || f.reporterRut.toLowerCase().includes(search) || f.id.toLowerCase().includes(search) || assetName.includes(search);
+                const matchSev = !sevFilter || f.severity === sevFilter;
+                const matchStatus = !statusFilter || f.status === statusFilter;
+                return matchSearch && matchSev && matchStatus;
+            });
+
+            document.getElementById('stat-total').textContent = failureReports.length;
+            document.getElementById('stat-critical').textContent = failureReports.filter(f => f.severity === 'Crítica').length;
+            document.getElementById('stat-pending').textContent = failureReports.filter(f => f.status === 'Pendiente').length;
+            document.getElementById('stat-ot').textContent = failureReports.filter(f => f.status === 'Convertido a OT').length;
+
+            // Desktop Table
+            const desktopBody = document.getElementById('triage-desktop-table');
+            desktopBody.innerHTML = filtered.map(f => {
+                const asset = assets.find(a => a.id === f.assetId);
+                return `
+                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition">
+                        <td class="p-3.5">
+                            <div class="font-mono font-bold text-zinc-900 dark:text-white">${f.id}</div>
+                            <div class="text-[10px] text-zinc-400 font-mono">${f.date}</div>
+                        </td>
+                        <td class="p-3.5">${getSeverityBadge(f.severity || 'Media')}</td>
+                        <td class="p-3.5">
+                            <div class="font-semibold text-zinc-800 dark:text-zinc-200">${asset ? asset.name : f.assetId}</div>
+                            <div class="text-[10px] text-zinc-400">${asset ? asset.line : ''}</div>
+                        </td>
+                        <td class="p-3.5 max-w-xs text-zinc-600 dark:text-zinc-300 leading-snug">${f.desc}</td>
+                        <td class="p-3.5 font-mono font-semibold text-indigo-500">${f.reporterRut}</td>
+                        <td class="p-3.5">
+                            <span class="px-2 py-0.5 rounded font-mono text-[10px] font-semibold ${f.status === 'Pendiente' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}">
+                                ${f.status}
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-right">
+                            ${f.status === 'Pendiente' && currentUser.role === 'jefe' ? `
+                                <button type="button" onclick="openConvertOtModal('${f.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-semibold shadow transition">
+                                    Convertir a OT
+                                </button>
+                            ` : `<span class="text-zinc-400 text-[11px] font-mono">${f.status === 'Convertido a OT' ? 'Asignada' : 'En revisión'}</span>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="7" class="p-8 text-center text-zinc-400 font-mono">Sin fallas registradas con los filtros actuales</td></tr>`;
+
+            // Mobile Touch Cards
+            const mobileContainer = document.getElementById('triage-mobile-cards');
+            mobileContainer.innerHTML = filtered.map(f => {
+                const asset = assets.find(a => a.id === f.assetId);
+                return `
+                    <div class="bg-white dark:bg-zinc-900/90 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2.5 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono text-[10px] text-zinc-400">${f.id} • ${f.date}</span>
+                            ${getSeverityBadge(f.severity || 'Media')}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-zinc-900 dark:text-white">${asset ? asset.name : f.assetId}</h4>
+                            <span class="text-[11px] text-zinc-500">${asset ? asset.line : ''}</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800/60 leading-relaxed">${f.desc}</p>
+                        <div class="flex justify-between items-center text-[10px] font-mono pt-1">
+                            <span class="text-zinc-400">RUT: <strong class="text-indigo-500">${f.reporterRut}</strong></span>
+                            ${f.status === 'Pendiente' && currentUser.role === 'jefe' ? `
+                                <button type="button" onclick="openConvertOtModal('${f.id}')" class="bg-indigo-600 text-white font-sans font-semibold text-xs px-3 py-1.5 rounded-lg shadow">Convertir a OT</button>
+                            ` : `<span class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">${f.status}</span>`}
+                        </div>
+                    </div>
+                `;
+            }).join('') || `<div class="p-6 text-center text-xs text-zinc-400 font-mono bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">Sin reportes para mostrar</div>`;
+        }
+
+        // REPORT FAILURE FORM
+        function openReportFailureModal() {
+            const select = document.getElementById('report-asset-id');
+            select.innerHTML = assets.map(a => `<option value="${a.id}">${a.id} - ${a.name} (${a.line})</option>`).join('');
+            document.getElementById('report-rut-preview').textContent = currentUser.rut;
+            document.getElementById('report-time-preview').textContent = new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+            document.getElementById('report-desc').value = '';
+            document.getElementById('modal-report-failure').classList.remove('hidden');
+        }
+
+        function submitFailureReport(e) {
+            e.preventDefault();
+            const newFail = {
+                id: 'FALLA-' + Math.floor(20 + Math.random() * 80),
+                assetId: document.getElementById('report-asset-id').value,
+                severity: document.getElementById('report-severity').value,
+                desc: document.getElementById('report-desc').value.trim(),
+                reporterRut: currentUser.rut,
+                date: new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }),
+                status: 'Pendiente'
+            };
+
+            if (!isOnline) {
+                pendingSyncQueue.push({ type: 'FAIL', data: newFail });
+                updateSyncBadge();
+                showToast('Guardado localmente en modo OFFLINE. Se sincronizará al reconectar.', 'warning');
+            } else {
+                failureReports.unshift(newFail);
+                showToast(`Falla ${newFail.id} reportada y registrada con RUT ${currentUser.rut}`, 'success');
+            }
+
+            closeModal('modal-report-failure');
+            renderFailuresTriage();
+        }
+
+        // CONVERT TO OT
+        function openConvertOtModal(failId) {
+            const f = failureReports.find(item => item.id === failId);
+            if (!f) return;
+            document.getElementById('convert-failure-id').value = f.id;
+            document.getElementById('convert-ot-title').value = `[${f.severity}] ${f.desc.slice(0, 35)}...`;
+            const techSelect = document.getElementById('convert-ot-rut');
+            techSelect.innerHTML = users.map(u => `<option value="${u.rut}">${u.name} (${u.rut})</option>`).join('');
+            document.getElementById('modal-convert-ot').classList.remove('hidden');
+        }
+
+        function submitConvertOt(e) {
+            e.preventDefault();
+            const failId = document.getElementById('convert-failure-id').value;
+            const f = failureReports.find(item => item.id === failId);
+            if (f) {
+                f.status = 'Convertido a OT';
+                const newOtId = 'OT-' + Math.floor(110 + Math.random() * 890);
+                workOrders.unshift({
+                    id: newOtId,
+                    assetId: f.assetId,
+                    title: document.getElementById('convert-ot-title').value,
+                    desc: f.desc,
+                    priority: f.severity === 'Crítica' ? 'Alta' : 'Media',
+                    status: 'Pendiente',
+                    assignedRut: document.getElementById('convert-ot-rut').value,
+                    date: new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
+                });
+                closeModal('modal-convert-ot');
+                renderFailuresTriage();
+                renderWorkOrders();
+                showToast(`Falla convertida a ${newOtId} y asignada`, 'success');
+            }
+        }
+
+        // RENDER CATASTRO ASSETS
+        function renderAssets() {
+            const grid = document.getElementById('asset-grid');
+            const search = document.getElementById('asset-search').value.toLowerCase();
+            const lineFilter = document.getElementById('asset-filter-line').value;
+
+            const filtered = assets.filter(a => {
+                const matchSearch = a.name.toLowerCase().includes(search) || a.id.toLowerCase().includes(search) || a.brand.toLowerCase().includes(search);
+                const matchLine = !lineFilter || a.line === lineFilter;
+                return matchSearch && matchLine;
+            });
+
+            grid.innerHTML = filtered.map(a => `
+                <div class="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 space-y-3 shadow-sm flex flex-col justify-between hover:border-indigo-500/40 transition">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded">${a.id}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status === 'Operativo' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}">${a.status}</span>
+                        </div>
+                        <h3 class="font-bold text-zinc-900 dark:text-white mt-2 text-sm">${a.name}</h3>
+                        <p class="text-xs text-zinc-500">${a.line}</p>
+                    </div>
+
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] space-y-1">
+                        <div>Ubicación: ${a.location}</div>
+                        <div>Marca: ${a.brand}</div>
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" onclick="openAssetDetail('${a.id}')" class="flex-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold py-2 rounded-lg transition">
+                            Ficha & Historial
+                        </button>
+                        <button type="button" onclick="openAssetDetail('${a.id}')" class="bg-zinc-900 dark:bg-zinc-800 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs transition" title="Ver Código QR">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openNewAssetModal() {
+            document.getElementById('new-asset-id').value = 'ACT-00' + (assets.length + 1);
+            document.getElementById('modal-new-asset').classList.remove('hidden');
+        }
+
+        function submitNewAsset(e) {
+            e.preventDefault();
+            const id = document.getElementById('new-asset-id').value.trim().toUpperCase();
+            if (assets.some(a => a.id === id)) {
+                showToast(`El código ${id} ya existe en el catastro.`, 'error');
+                return;
+            }
+            assets.push({
+                id,
+                name: document.getElementById('new-asset-name').value.trim(),
+                line: document.getElementById('new-asset-line').value,
+                location: document.getElementById('new-asset-location').value.trim(),
+                brand: document.getElementById('new-asset-brand').value.trim(),
+                specs: 'Ficha técnica estándar registrada',
+                status: 'Operativo',
+                cost: 0
+            });
+            closeModal('modal-new-asset');
+            renderAssets();
+            renderPreventiveAndCosts();
+            showToast(`Activo ${id} registrado con código QR generado`, 'success');
+        }
+
+        // RENDER WORK ORDERS
+        function renderWorkOrders() {
+            const pend = workOrders.filter(o => o.status === 'Pendiente');
+            const enc = workOrders.filter(o => o.status === 'En curso');
+            const cer = workOrders.filter(o => o.status === 'Cerrada');
+
+            document.getElementById('count-ot-pendiente').textContent = pend.length;
+            document.getElementById('count-ot-encurso').textContent = enc.length;
+            document.getElementById('count-ot-cerrada').textContent = cer.length;
+
+            const card = (o) => {
+                const asset = assets.find(a => a.id === o.assetId);
+                return `
+                    <div class="bg-white dark:bg-zinc-900 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2 shadow-sm text-xs">
+                        <div class="flex justify-between items-center font-mono text-[10px] text-zinc-400">
+                            <span class="font-bold text-indigo-500">${o.id} • ${o.assetId}</span>
+                            <span class="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-bold text-zinc-600 dark:text-zinc-300">${o.priority}</span>
+                        </div>
+                        <h4 class="font-bold text-zinc-900 dark:text-white">${o.title}</h4>
+                        <p class="text-zinc-500 text-[11px] leading-snug">${o.desc}</p>
+                        <div class="text-[10px] text-zinc-400 font-mono">Máquina: ${asset ? asset.name : o.assetId}</div>
+                        <div class="text-[10px] text-indigo-500 font-mono">Técnico RUT: ${o.assignedRut}</div>
+
+                        <div class="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                            ${o.status === 'Pendiente' ? `<button type="button" onclick="changeOtStatus('${o.id}', 'En curso')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-1.5 rounded-lg transition">Iniciar Intervención</button>` : ''}
+                            ${o.status === 'En curso' ? `<button type="button" onclick="openCloseOtModal('${o.id}')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-1.5 rounded-lg transition">Registrar & Cerrar OT</button>` : ''}
+                            ${o.status === 'Cerrada' ? `<span class="text-emerald-500 font-bold text-[10px] flex items-center gap-1"><i class="fa-solid fa-lock"></i> Cerrada y bloqueada con RUT</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            };
+
+            document.getElementById('ot-list-pendiente').innerHTML = pend.map(card).join('') || '<div class="text-xs text-zinc-500 py-4 text-center font-mono">Sin OTs pendientes</div>';
+            document.getElementById('ot-list-encurso').innerHTML = enc.map(card).join('') || '<div class="text-xs text-zinc-500 py-4 text-center font-mono">Sin OTs en curso</div>';
+            document.getElementById('ot-list-cerrada').innerHTML = cer.map(card).join('') || '<div class="text-xs text-zinc-500 py-4 text-center font-mono">Sin OTs cerradas</div>';
+        }
+
+        function openNewOtModal() {
+            document.getElementById('new-ot-asset').innerHTML = assets.map(a => `<option value="${a.id}">${a.id} - ${a.name}</option>`).join('');
+            document.getElementById('new-ot-rut').innerHTML = users.map(u => `<option value="${u.rut}">${u.name} (${u.rut})</option>`).join('');
+            document.getElementById('modal-new-ot').classList.remove('hidden');
+        }
+
+        function submitNewOt(e) {
+            e.preventDefault();
+            const newId = 'OT-' + Math.floor(110 + Math.random() * 890);
+            workOrders.unshift({
+                id: newId,
+                assetId: document.getElementById('new-ot-asset').value,
+                title: document.getElementById('new-ot-title').value.trim(),
+                desc: document.getElementById('new-ot-desc').value.trim(),
+                priority: document.getElementById('new-ot-priority').value,
+                status: 'Pendiente',
+                assignedRut: document.getElementById('new-ot-rut').value,
+                date: new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
+            });
+            closeModal('modal-new-ot');
+            renderWorkOrders();
+            showToast(`Orden de Trabajo ${newId} creada`, 'success');
+        }
+
+        function changeOtStatus(id, st) {
+            const ot = workOrders.find(o => o.id === id);
+            if (ot) {
+                ot.status = st;
+                renderWorkOrders();
+                showToast(`${id} pasó a estado: ${st}`, 'info');
+            }
+        }
+
+        function openCloseOtModal(id) {
+            document.getElementById('close-ot-id').value = id;
+            document.getElementById('close-ot-actions').value = '';
+            document.getElementById('close-spare-name').value = '';
+            document.getElementById('close-spare-cost').value = '';
+            document.getElementById('modal-close-ot').classList.remove('hidden');
+        }
+
+        function submitCloseOt(e) {
+            e.preventDefault();
+            const id = document.getElementById('close-ot-id').value;
+            const ot = workOrders.find(o => o.id === id);
+            if (ot) {
+                ot.status = 'Cerrada';
+                const spareName = document.getElementById('close-spare-name').value.trim();
+                const spareCost = parseInt(document.getElementById('close-spare-cost').value, 10) || 0;
+                const actionsText = document.getElementById('close-ot-actions').value.trim();
+
+                if (spareCost > 0) {
+                    const asset = assets.find(a => a.id === ot.assetId);
+                    if (asset) asset.cost += spareCost;
+                }
+
+                interventions.unshift({
+                    id: 'INT-' + Date.now(),
+                    assetId: ot.assetId,
+                    otId: ot.id,
+                    rut: currentUser.rut,
+                    date: new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }),
+                    details: actionsText + (spareName ? ` [Repuesto: ${spareName} ($${spareCost.toLocaleString('es-CL')})]` : '')
+                });
+
+                closeModal('modal-close-ot');
+                renderWorkOrders();
+                renderPreventiveAndCosts();
+                showToast(`${ot.id} cerrada con trazabilidad RUT ${currentUser.rut}`, 'success');
+            }
+        }
+
+        // PREVENTIVE AND COSTS
+        function renderPreventiveAndCosts() {
+            document.getElementById('preventive-list').innerHTML = preventiveSchedules.map(p => `
+                <div class="pt-2.5 flex justify-between items-center text-xs gap-2">
+                    <div>
+                        <div class="font-bold text-zinc-900 dark:text-white">${p.title}</div>
+                        <div class="text-zinc-500 text-[11px]">${p.assetId} • Frecuencia: ${p.freq} • Próx: ${p.nextDate}</div>
+                    </div>
+                    ${currentUser.role === 'jefe' ? `
+                        <button type="button" onclick="generateOtFromPreventive('${p.id}')" class="shrink-0 bg-indigo-500/10 hover:bg-indigo-600 text-indigo-500 hover:text-white border border-indigo-500/20 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition">
+                            Generar OT
+                        </button>
+                    ` : `<span class="font-mono text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded font-bold">${p.nextDate}</span>`}
+                </div>
+            `).join('');
+
+            let totalGlobal = 0;
+            document.getElementById('cost-table-body').innerHTML = assets.map(a => {
+                totalGlobal += a.cost;
+                return `
+                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+                        <td class="p-2.5 font-semibold text-zinc-800 dark:text-zinc-200">${a.name}</td>
+                        <td class="p-2.5 text-zinc-500">${a.line}</td>
+                        <td class="p-2.5 text-right font-mono font-bold text-indigo-500">$${a.cost.toLocaleString('es-CL')}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const kpiCostEl = document.getElementById('kpi-total-cost');
+            if (kpiCostEl) kpiCostEl.textContent = '$' + totalGlobal.toLocaleString('es-CL');
+        }
+
+        function openNewPreventiveModal() {
+            document.getElementById('new-prev-asset').innerHTML = assets.map(a => `<option value="${a.id}">${a.id} - ${a.name}</option>`).join('');
+            document.getElementById('modal-new-preventive').classList.remove('hidden');
+        }
+
+        function submitNewPreventive(e) {
+            e.preventDefault();
+            preventiveSchedules.unshift({
+                id: 'PREV-' + Math.floor(10 + Math.random() * 90),
+                assetId: document.getElementById('new-prev-asset').value,
+                title: document.getElementById('new-prev-title').value.trim(),
+                freq: document.getElementById('new-prev-freq').value,
+                nextDate: document.getElementById('new-prev-date').value
+            });
+            closeModal('modal-new-preventive');
+            renderPreventiveAndCosts();
+            showToast('Pauta preventiva programada', 'success');
+        }
+
+        function generateOtFromPreventive(prevId) {
+            const p = preventiveSchedules.find(item => item.id === prevId);
+            if (!p) return;
+            const newId = 'OT-' + Math.floor(110 + Math.random() * 890);
+            workOrders.unshift({
+                id: newId,
+                assetId: p.assetId,
+                title: `[Preventivo] ${p.title}`,
+                desc: `Ejecución de pauta preventiva ${p.freq} (${p.id}).`,
+                priority: 'Media',
+                status: 'Pendiente',
+                assignedRut: '12.345.678-9',
+                date: new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
+            });
+            renderWorkOrders();
+            showToast(`OT ${newId} generada desde pauta preventiva`, 'success');
+        }
+
+        function exportCostsCSV() {
+            let csv = "Codigo,Activo,Linea,Costo_CLP\n";
+            assets.forEach(a => csv += `${a.id},"${a.name}","${a.line}",${a.cost}\n`);
+            const link = document.createElement("a");
+            link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+            link.download = "SIGAMT_Costos_Activos.csv";
+            link.click();
+            showToast('Reporte CSV de costos descargado', 'success');
+        }
+
+        // AI SUGGESTIONS (Human-in-the-loop)
+        function renderAiSuggestions() {
+            document.getElementById('ai-suggestions-container').innerHTML = aiSuggestions.map(s => `
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-indigo-400">${s.title}</span>
+                        <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">${s.assetId}</span>
+                    </div>
+                    <p class="text-zinc-300"><strong>Análisis Histórico:</strong> ${s.reason}</p>
+                    <div class="bg-indigo-950/40 border border-indigo-900/50 p-2.5 rounded-lg text-indigo-200 text-[11px]">
+                        <strong>Recomendación IA:</strong> ${s.recommendation}
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        ${s.decision === 'accepted' ? `<span class="text-emerald-400 font-bold font-mono text-[11px]"><i class="fa-solid fa-check-circle"></i> Recomendación Aceptada por ${currentUser.name}</span>` :
+                          s.decision === 'discarded' ? `<span class="text-zinc-500 font-mono text-[11px]"><i class="fa-solid fa-ban"></i> Descartada por criterio técnico</span>` : `
+                            <button type="button" onclick="handleAiDecision('${s.id}', 'accepted')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg transition">Aceptar Recomendación</button>
+                            <button type="button" onclick="handleAiDecision('${s.id}', 'discarded')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] px-3 py-1.5 rounded-lg transition">Descartar</button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleAiDecision(id, decision) {
+            const s = aiSuggestions.find(item => item.id === id);
+            if (s) {
+                s.decision = decision;
+                renderAiSuggestions();
+                showToast(decision === 'accepted' ? 'Recomendación IA aprobada por criterio humano' : 'Recomendación descartada', 'info');
+            }
+        }
+
+        // OFFLINE MODE SIMULATOR (RF07 / SIG-7)
+        function toggleOfflineMode() {
+            isOnline = !isOnline;
+            const btn = document.getElementById('sync-status-btn');
+            const dot = document.getElementById('sync-dot');
+            const txt = document.getElementById('sync-text');
+
+            if (isOnline) {
+                btn.className = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono border transition bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20";
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                txt.textContent = "ONLINE";
+                if (pendingSyncQueue.length > 0) {
+                    const count = pendingSyncQueue.length;
+                    pendingSyncQueue.forEach(item => failureReports.unshift(item.data));
+                    pendingSyncQueue = [];
+                    updateSyncBadge();
+                    renderFailuresTriage();
+                    showToast(`Conexión restaurada: ${count} reporte(s) sincronizado(s) sin duplicados`, 'success');
+                } else {
+                    showToast('Conexión Wi-Fi de planta activa (ONLINE)', 'success');
+                }
+            } else {
+                btn.className = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono border transition bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20";
+                dot.className = "w-2 h-2 rounded-full bg-amber-500";
+                txt.textContent = "OFFLINE";
+                showToast('Modo Sin Conexión activado. Los reportes se guardarán localmente.', 'warning');
+            }
+        }
+
+        function updateSyncBadge() {
+            const b = document.getElementById('pending-count-badge');
+            if (pendingSyncQueue.length > 0) {
+                b.classList.remove('hidden');
+                b.textContent = pendingSyncQueue.length;
+            } else {
+                b.classList.add('hidden');
+            }
+        }
+
+        // DYNAMIC QR CODE GENERATOR
+        function generateQrSvg(seedText) {
+            let hash = 0;
+            for (let i = 0; i < seedText.length; i++) {
+                hash = ((hash << 5) - hash) + seedText.charCodeAt(i);
+                hash |= 0;
+            }
+            let cells = '';
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    if ((Math.abs(hash + r * 7 + c * 13) % 2) === 0) {
+                        cells += `<rect x="${38 + c * 5}" y="${38 + r * 5}" width="4.5" height="4.5" fill="#09090b"/>`;
+                    }
+                }
+            }
+            return `
+                <svg width="104" height="104" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" fill="white"/>
+                    <rect x="8" y="8" width="24" height="24" fill="#09090b"/>
+                    <rect x="12" y="12" width="16" height="16" fill="white"/>
+                    <rect x="16" y="16" width="8" height="8" fill="#09090b"/>
+                    <rect x="68" y="8" width="24" height="24" fill="#09090b"/>
+                    <rect x="72" y="12" width="16" height="16" fill="white"/>
+                    <rect x="76" y="16" width="8" height="8" fill="#09090b"/>
+                    <rect x="8" y="68" width="24" height="24" fill="#09090b"/>
+                    <rect x="12" y="72" width="16" height="16" fill="white"/>
+                    <rect x="16" y="76" width="8" height="8" fill="#09090b"/>
+                    ${cells}
+                    <text x="50" y="96" font-family="monospace" font-size="8" font-weight="bold" text-anchor="middle" fill="#09090b">${seedText}</text>
+                </svg>
+            `;
+        }
+
+        function openAssetDetail(id) {
+            const a = assets.find(item => item.id === id);
+            if (!a) return;
+            document.getElementById('modal-asset-code').textContent = a.id;
+            document.getElementById('modal-asset-title').textContent = a.name;
+            document.getElementById('modal-asset-line').textContent = a.line;
+            document.getElementById('modal-asset-location').textContent = a.location;
+            document.getElementById('modal-asset-brand').textContent = a.brand;
+            document.getElementById('modal-asset-specs').textContent = a.specs || 'Ficha técnica estándar';
+            document.getElementById('qr-code-svg').innerHTML = generateQrSvg(a.id);
+
+            const hist = interventions.filter(i => i.assetId === id);
+            document.getElementById('modal-asset-history').innerHTML = hist.length ? hist.map(h => `
+                <tr>
+                    <td class="p-2.5 font-mono text-[10px] text-zinc-400">${h.date}</td>
+                    <td class="p-2.5 font-mono font-bold text-indigo-500">${h.rut}</td>
+                    <td class="p-2.5 text-zinc-700 dark:text-zinc-300">${h.details}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="3" class="p-4 text-center text-zinc-500 font-mono">Sin intervenciones registradas aún.</td></tr>';
+
+            document.getElementById('modal-asset-detail').classList.remove('hidden');
+        }
+
+        function openQrScannerModal() {
+            const select = document.getElementById('scanner-asset-select');
+            select.innerHTML = assets.map(a => `<option value="${a.id}">${a.id} - ${a.name}</option>`).join('');
+            document.getElementById('modal-qr-scanner').classList.remove('hidden');
+        }
+
+        function executeQrScan() {
+            const id = document.getElementById('scanner-asset-select').value;
+            closeModal('modal-qr-scanner');
+            openAssetDetail(id);
+            showToast(`QR ${id} escaneado en 0.4s`, 'success');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
